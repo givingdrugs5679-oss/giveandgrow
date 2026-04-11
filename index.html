@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GIVEANDGROW Foundation - Changing Lives</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Specific Admin Table Styling (Place in style.css for cleaner code if preferred) */
+        .admin-table th, .admin-table td {
+            padding: 12px;
+            border-bottom: 1px solid #333;
+            text-align: left;
+        }
+        .admin-table th {
+            color: var(--color-accent);
+            font-weight: 700;
+            background-color: #1a1a1a;
+        }
+        .admin-table tr:hover {
+            background-color: #1f1f1f;
+        }
+        .admin-table button {
+            background-color: var(--color-secondary-accent);
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 5px; /* Added spacing for multiple buttons */
+        }
+        .btn-danger {
+            background-color: #cc0000; /* Style for reset password/delete user button */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ======================== GLOBAL HEADER (Shared across all pages) ======================== -->
+    <header class="main-header">
+        <div class="container nav-bar">
+            <div class="logo">
+                <a href="#" data-page="index">
+                    <h1><span class="accent">GIVEAND</span>GROW</h1>
+                </a>
+            </div>
+            <nav class="main-nav" id="main-nav">
+                <ul>
+                    <li><a href="#" data-page="index" data-section="mission">Who We Are</a></li>
+                    <li><a href="#" data-page="index" data-section="work">Our Projects</a></li>
+                    <li><a href="#" data-page="index" data-section="news">Updates</a></li>
+                    <li><a href="#" data-page="index" data-section="shop">Shop</a></li>
+                    <li id="profile-link-nav" style="display: none;"><a href="#" data-page="profile">Profile</a></li>
+                    <li><a href="#" id="auth-link" data-page="login">Login/Sign Up</a></li>
+                </ul>
+                <a href="#" data-page="donate" class="btn btn-primary nav-donate-btn">DONATE NOW</a>
+            </nav>
+            <button class="menu-toggle" aria-label="Toggle navigation" id="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- ======================== MAIN APP CONTAINER (Dynamic Content) ======================== -->
+    <main id="app-main">
+        <!-- Content will be injected dynamically based on page hash -->
+        <div class="loading-container" style="text-align:center; padding: 60px;">Loading...</div>
+    </main>
+
+    <!-- ======================== GLOBAL FOOTER ======================== -->
+    <footer class="main-footer">
+        <div class="container footer-grid">
+            <div class="footer-col logo-col">
+                <h3>GIVEANDGROW</h3>
+                <p>Driving change through innovative philanthropy and community power.</p>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-youtube"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-facebook-f"></i></a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h4>QUICK LINKS</h4>
+                <ul>
+                    <li><a href="#" data-page="index" data-section="mission">Who We Are</a></li>
+                    <li><a href="#" data-page="index" data-section="work">Our Projects</a></li>
+                    <li><a href="#" data-page="index" data-section="news">Newsroom</a></li>
+                    <li><a href="#">Financials</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>GET INVOLVED</h4>
+                <ul>
+                    <li><a href="#" data-page="donate">Donate</a></li>
+                    <li><a href="#" data-page="index" data-section="shop">Shop</a></li>
+                    <li><a href="#">Volunteer</a></li>
+                    <li><a href="#">Partner With Us</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>CONTACT</h4>
+                <p>Greenville, NC, USA</p>
+                <p>Email: contact@example.org</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="container">
+                <p>&copy; 2024 GIVEANDGROW Foundation. All rights reserved.</p>
+                <div class="legal-links">
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Use</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Firebase SDK Imports -->
+    <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"></script>
+
+    <script type="module">
+      // --------------------------------------------------------------------------------
+      // V9 Firebase SDK Imports & Initialization
+      // --------------------------------------------------------------------------------
+      import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
+      import { 
+          getAuth, 
+          signInWithEmailAndPassword, 
+          createUserWithEmailAndPassword, 
+          signOut, 
+          onAuthStateChanged,
+          sendPasswordResetEmail
+      } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
+      import { 
+          getFirestore, 
+          collection, 
+          doc, 
+          setDoc, 
+          getDoc, 
+          getDocs, 
+          query, 
+          where, 
+          orderBy, 
+          addDoc, 
+          updateDoc, 
+          increment,
+          deleteDoc,
+          serverTimestamp
+      } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyDHQnzRgm5Oe_ckCV-KJCrrmOpK4A7-r-0",
+        authDomain: "giveandglow-4a2e1.firebaseapp.com",
+        projectId: "giveandglow-4a2e1",
+        storageBucket: "giveandglow-4a2e1.firebasestorage.app",
+        messagingSenderId: "533232811188",
+        appId: "1:533232811188:web:f7d3dc1c8e99e054496be1",
+        measurementId: "G-DLM6EJJ7XD"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+
+      // --------------------------------------------------------------------------------
+      // Global State & Helpers
+      // --------------------------------------------------------------------------------
+      let currentStep = 1;
+      let pendingDonationData = null;
+      let currentUser = null;
+
+      function logoutUser() {
+          signOut(auth).then(() => {
+              alert('You have been logged out.');
+              navigateTo('index');
+          }).catch((error) => console.error("Logout Error:", error));
+      }
+      window.logoutUser = logoutUser;
+
+      function setButtonLoading(btnId, isLoading, defaultText = 'Submit') {
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+        const textElement = btn.querySelector('#' + btnId.replace('Btn', 'BtnText'));
+        const spinnerElement = btn.querySelector('#' + btnId.replace('Btn', 'BtnSpinner'));
+        btn.disabled = isLoading;
+        if (textElement) textElement.style.display = isLoading ? 'none' : 'inline';
+        if (spinnerElement) spinnerElement.style.display = isLoading ? 'inline-block' : 'none';
+      }
+
+      window.nextStep = function() {
+          const current = document.getElementById(`step${currentStep}`);
+          const next = document.getElementById(`step${currentStep + 1}`);
+          if (currentStep === 1) {
+              const customAmount = document.getElementById('customAmount').value;
+              if (!customAmount || parseFloat(customAmount) <= 0) {
+                  alert('Please enter a valid donation amount.');
+                  return;
+              }
+          }
+          if (next) {
+              current.classList.remove('active');
+              next.classList.add('active');
+              currentStep++;
+              window.scrollTo(0, 0);
+          }
+      }
+      window.prevStep = function() {
+          const current = document.getElementById(`step${currentStep}`);
+          const prev = document.getElementById(`step${currentStep - 1}`);
+          if (prev) {
+              current.classList.remove('active');
+              prev.classList.add('active');
+              currentStep--;
+              window.scrollTo(0, 0);
+          }
+      }
+
+      // Navigation & Routing
+      function navigateTo(page, sectionId = null) {
+          window.location.hash = page;
+          if (sectionId) {
+              setTimeout(() => {
+                  const el = document.getElementById(sectionId);
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }, 150);
+          }
+      }
+
+      function renderPage() {
+          const hash = window.location.hash.substring(1) || 'index';
+          const mainEl = document.getElementById('app-main');
+          if (hash === 'index') renderHome(mainEl);
+          else if (hash === 'about') renderAbout(mainEl);
+          else if (hash === 'donate') renderDonate(mainEl);
+          else if (hash === 'login') renderLogin(mainEl);
+          else if (hash === 'signup') renderSignup(mainEl);
+          else if (hash === 'profile') renderProfile(mainEl);
+          else if (hash === 'admin') renderAdmin(mainEl);
+          else renderHome(mainEl);
+          
+          // Re-attach mobile menu listener after content change
+          attachMobileMenuListener();
+      }
+
+      function attachMobileMenuListener() {
+          const menuToggle = document.getElementById('menu-toggle');
+          const mainNav = document.getElementById('main-nav');
+          if (menuToggle && mainNav) {
+              menuToggle.onclick = () => {
+                  mainNav.classList.toggle('active');
+                  const icon = menuToggle.querySelector('i');
+                  if (mainNav.classList.contains('active')) {
+                      icon.classList.remove('fa-bars');
+                      icon.classList.add('fa-times');
+                  } else {
+                      icon.classList.remove('fa-times');
+                      icon.classList.add('fa-bars');
+                  }
+              };
+          }
+      }
+
+      // ======================== PAGE RENDERERS (Exact copies from original files) ========================
+      function renderHome(container) {
+          container.innerHTML = `
+            <section class="hero-section">
+                <div class="hero-content">
+                    <p class="hero-subtext">Leveraging Influence for Global Good</p>
+                    <h1>Inspiring a Movement. Driving Real Change.</h1>
+                    <p class="hero-description">We harness the power of community to fund large-scale charitable projects worldwide. 100% of the funds raised go directly to our causes.</p>
+                    <div class="hero-actions">
+                        <a href="#" data-page="donate" class="btn btn-cta">START YOUR IMPACT</a>
+                        <a href="#work" class="btn btn-secondary" data-page="index" data-section="work">SEE OUR WORK</a>
+                    </div>
+                </div>
+                <div class="hero-visual">
+                    <div class="video-placeholder">
+                        <img src="https://picsum.photos/500/300?random=10" alt="Video Placeholder: Impact Story" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                    </div>
+                </div>
+            </section>
+            <section class="impact-stats">
+                <div class="container">
+                    <div class="stat-item"><h2>20,000+</h2><p>Meals Distributed Annually</p></div>
+                    <div class="stat-item"><h2>85</h2><p>Communities Served</p></div>
+                    <div class="stat-item"><h2>1.2M</h2><p>Liters of Clean Water Provided</p></div>
+                    <div class="stat-item"><h2>100%</h2><p>Of Revenue to Charity</p></div>
+                </div>
+            </section>
+            <section class="section-padding" id="mission">
+                <div class="container mission-grid">
+                    <div class="mission-text"><p class="section-tagline">WHO WE ARE</p><h2>A New Era of Philanthropy</h2><p>We believe in radical transparency and high-impact, measurable results...</p><ul><li><i class="fas fa-check-circle"></i> High-Impact Initiatives</li><li><i class="fas fa-check-circle"></i> Global Reach, Local Focus</li><li><i class="fas fa-check-circle"></i> Full Financial Transparency</li></ul><a href="#" data-page="about" class="btn btn-outline">READ OUR FULL STORY</a></div>
+                    <div class="mission-image"><img src="https://picsum.photos/500/350?random=2" alt="Focus Area" style="width:100%; border-radius:8px;"></div>
+                </div>
+            </section>
+            <section class="section-padding dark-bg" id="work">
+                <div class="container"><p class="section-tagline">OUR WORK</p><h2>Recent High-Impact Projects</h2>
+                <div class="projects-grid">
+                    <div class="project-card"><img src="https://picsum.photos/300/200?random=3" class="project-img"><h3>Clean Water Initiative</h3><p>Built 10 new sustainable wells...</p><a href="#" class="read-more">Learn More <i class="fas fa-arrow-right"></i></a></div>
+                    <div class="project-card"><img src="https://picsum.photos/300/200?random=4" class="project-img"><h3>Education Access Fund</h3><p>Supplied over 5,000 children...</p><a href="#" class="read-more">Learn More <i class="fas fa-arrow-right"></i></a></div>
+                    <div class="project-card"><img src="https://picsum.photos/300/200?random=5" class="project-img"><h3>Disaster Relief Aid</h3><p>Provided emergency food, shelter...</p><a href="#" class="read-more">Learn More <i class="fas fa-arrow-right"></i></a></div>
+                </div></div>
+            </section>
+            <section class="cta-banner" id="donate"><div class="container"><h2>Join The Global Impact Movement.</h2><p>Your support helps us change lives.</p><a href="#" data-page="donate" class="btn btn-cta btn-large">MAKE A DONATION TODAY</a></div></section>
+            <section class="section-padding" id="shop"><div class="container text-center"><p class="section-tagline">SUPPORT US</p><h2>Shop & Give Back</h2><p>100% of profits go to charitable projects.</p><div class="shop-cards-container"><div class="shop-card"><img src="https://picsum.photos/300/180?random=6" class="shop-img"><h3>Foundation T-Shirt</h3><p class="price">$25.00</p><a href="#" class="btn btn-outline">View Details</a></div><div class="shop-card"><img src="https://picsum.photos/300/180?random=7" class="shop-img"><h3>Impact Hoodie</h3><p class="price">$45.00</p><a href="#" class="btn btn-outline">View Details</a></div></div></div></section>
+          `;
+          attachGlobalLinkListeners();
+      }
+
+      function renderAbout(container) {
+          container.innerHTML = `<div class="donate-page-content"><div class="container" style="max-width: 900px;"><p class="section-tagline">OUR ROOTS</p><h1>From Vision to Global Action</h1><p style="color: var(--color-gray); margin-bottom: 30px;">Established in 2024, the GIVEANDGROW Foundation was founded on the principle that modern influence can be leveraged for maximum, measurable charitable good...</p><img src="https://picsum.photos/900/400?random=11" alt="Team" style="width:100%; border-radius:10px; margin-bottom:40px;"><h2 style="color: var(--color-accent);">Our Core Philosophy: Radical Transparency</h2><p>Unlike traditional charities, our operational costs are covered by sponsorships, allowing 100% of public donations to go to projects.</p><div class="mission-grid" style="grid-template-columns:1fr;"><div style="padding:20px; background:#1f1f1f; border-left:5px solid var(--color-secondary-accent);"><h3>The Next Five Years</h3><p>Expanding to fifty countries, focusing on youth education and environmental stability.</p></div></div><a href="#" data-page="donate" class="btn btn-cta" style="margin-top:40px; display:block; width:300px; margin:40px auto;">SUPPORT OUR MISSION</a></div></div>`;
+          attachGlobalLinkListeners();
+      }
+
+      function renderLogin(container) {
+          container.innerHTML = `<div class="donate-page-content"><div class="container login-form-container"><h2>Log In to Your Account</h2><form id="loginForm"><div class="input-group"><label for="loginEmail">Email Address</label><input type="email" id="loginEmail" required value="user@example.com"></div><div class="input-group"><label for="loginPassword">Password</label><input type="password" id="loginPassword" required value="password123"></div><p style="text-align:right; margin-bottom:25px;"><a href="#" style="color:var(--color-secondary-accent);">Forgot Password?</a></p><button type="submit" class="btn btn-primary btn-large" style="width:100%;" id="loginSubmitBtn"><span id="loginBtnText">LOG IN</span><i id="loginBtnSpinner" class="fas fa-spinner fa-spin" style="display:none;"></i></button><p style="text-align:center; margin-top:25px;">Don't have an account? <a href="#" data-page="signup" style="color:var(--color-accent);">Sign Up</a></p><p style="text-align:center; font-size:0.9em;">(Use admin@gif.org/admin123 for admin access)</p></form></div></div>`;
+          const loginForm = document.getElementById('loginForm');
+          if (loginForm) {
+              loginForm.addEventListener('submit', async (e) => {
+                  e.preventDefault();
+                  setButtonLoading('loginSubmitBtn', true);
+                  try {
+                      await signInWithEmailAndPassword(auth, document.getElementById('loginEmail').value, document.getElementById('loginPassword').value);
+                  } catch (error) {
+                      alert(`Login Failed: ${error.message}`);
+                      setButtonLoading('loginSubmitBtn', false);
+                  }
+              });
+          }
+          attachGlobalLinkListeners();
+      }
+
+      function renderSignup(container) {
+          container.innerHTML = `<div class="donate-page-content"><div class="container login-form-container"><h2>Create Your GIVEANDGROW Account</h2><form id="signupForm"><div class="input-group"><label for="regFirstName">First Name *</label><input type="text" id="regFirstName" required></div><div class="input-group"><label for="regEmail">Email Address *</label><input type="email" id="regEmail" required></div><div class="input-group"><label for="regPassword">Password *</label><input type="password" id="regPassword" required></div><div class="input-group"><label for="regPasswordConfirm">Confirm Password *</label><input type="password" id="regPasswordConfirm" required></div><div class="checkbox-group"><input type="checkbox" id="termsAgree" required><label>I agree to the <a href="#">Terms</a></label></div><button type="submit" class="btn btn-primary btn-large" style="width:100%;" id="signupSubmitBtn"><span id="signupBtnText">SIGN UP</span><i id="signupBtnSpinner" class="fas fa-spinner fa-spin" style="display:none;"></i></button><p style="text-align:center; margin-top:25px;">Already have an account? <a href="#" data-page="login" style="color:var(--color-accent);">Log In</a></p></form></div></div>`;
+          const signupForm = document.getElementById('signupForm');
+          if (signupForm) {
+              signupForm.addEventListener('submit', async (e) => {
+                  e.preventDefault();
+                  const pwd = document.getElementById('regPassword').value;
+                  const confirm = document.getElementById('regPasswordConfirm').value;
+                  if (pwd !== confirm) { alert('Passwords do not match.'); return; }
+                  setButtonLoading('signupSubmitBtn', true);
+                  try {
+                      const cred = await createUserWithEmailAndPassword(auth, document.getElementById('regEmail').value, pwd);
+                      await setDoc(doc(db, "users", cred.user.uid), { firstName: document.getElementById('regFirstName').value, email: cred.user.email, phone: '', address: '', city: '', zip: '', totalDonated: 0, createdAt: serverTimestamp() });
+                      alert('Signup Successful! You can now log in.');
+                      navigateTo('login');
+                  } catch (err) { alert(`Signup Failed: ${err.message}`); setButtonLoading('signupSubmitBtn', false); }
+              });
+          }
+          attachGlobalLinkListeners();
+      }
+
+      async function renderProfile(container) {
+          if (!currentUser) { navigateTo('login'); return; }
+          container.innerHTML = `<div class="donate-page-content"><div class="container" style="max-width:900px;"><p class="section-tagline">YOUR IMPACT</p><h1 id="welcome-message">Welcome!</h1><div id="profileDetails" class="profile-card" style="background:#1f1f1f; padding:25px; border-radius:10px;"><h3>My Details</h3><p><strong>Email:</strong> <span id="profileEmail">Loading...</span></p><p><strong>First Name:</strong> <span id="profileName">Loading...</span></p><p><strong>Phone:</strong> <span id="profilePhone">Not Set</span></p><p><strong>Address:</strong> <span id="profileAddress">Not Set</span></p><p><strong>City, Zip:</strong> <span id="profileCityZip">Not Set</span></p><button id="editDetailsBtn" class="btn btn-outline">Edit Details</button></div><div id="profileEdit" style="display:none; background:#1f1f1f; padding:25px; border-radius:10px;"><h3>Edit Details</h3><form><input type="text" id="editFirstName" placeholder="First Name"><input type="tel" id="editPhone" placeholder="Phone"><input type="text" id="editAddress" placeholder="Address"><input type="text" id="editCity" placeholder="City"><input type="text" id="editZip" placeholder="Zip"><button type="button" id="saveDetailsBtn">Save</button><button type="button" id="cancelEditBtn">Cancel</button></form></div><div class="donation-history"><h2>Donation Summary</h2><div class="dashboard-card" style="background:#1f1f1f; padding:25px;"><h3>Total Donations Made</h3><p style="font-size:3rem;" id="totalDonated">$0.00</p></div><h2>Your Donation History</h2><div style="overflow-x:auto;"><table id="donationHistoryTable" style="width:100%;"><thead><tr><th>Date</th><th>Campaign</th><th>Amount</th><th>Frequency</th></tr></thead><tbody><tr><td colspan="4">Loading history...</td></tr></tbody></table></div></div><button id="logout-btn" class="btn btn-secondary" style="margin:40px auto; display:block;">LOG OUT</button></div></div>`;
+          
+          async function loadProfileData(user) {
+              const docSnap = await getDoc(doc(db, "users", user.uid));
+              if (!docSnap.exists()) return;
+              const data = docSnap.data();
+              document.getElementById('welcome-message').innerText = `Welcome, ${data.firstName || 'User'}!`;
+              document.getElementById('profileName').innerText = data.firstName || 'Not Set';
+              document.getElementById('profileEmail').innerText = data.email;
+              document.getElementById('profilePhone').innerText = data.phone || 'Not Set';
+              document.getElementById('profileAddress').innerText = data.address || 'Not Set';
+              document.getElementById('profileCityZip').innerText = `${data.city || 'Not Set'}, ${data.zip || 'Not Set'}`;
+              document.getElementById('totalDonated').innerText = `$${(data.totalDonated || 0).toFixed(2)}`;
+              document.getElementById('editFirstName').value = data.firstName || '';
+              document.getElementById('editPhone').value = data.phone || '';
+              document.getElementById('editAddress').value = data.address || '';
+              document.getElementById('editCity').value = data.city || '';
+              document.getElementById('editZip').value = data.zip || '';
+              
+              const q = query(collection(db, "donations"), where("userId", "==", user.uid), orderBy("date", "desc"));
+              const snap = await getDocs(q);
+              const tbody = document.querySelector('#donationHistoryTable tbody');
+              if (tbody) {
+                  tbody.innerHTML = '';
+                  if (!snap.empty) snap.forEach(d => { const don = d.data(); const row = tbody.insertRow(); row.insertCell().innerText = don.date?.toDate().toLocaleDateString() || 'N/A'; row.insertCell().innerText = don.campaign; row.insertCell().innerText = `$${don.amount.toFixed(2)}`; row.insertCell().innerText = don.frequency; });
+                  else tbody.innerHTML = '<tr><td colspan="4">No donations recorded yet.</td></tr>';
+              }
+          }
+          const editBtn = document.getElementById('editDetailsBtn'), saveBtn = document.getElementById('saveDetailsBtn'), cancelBtn = document.getElementById('cancelEditBtn');
+          const detailsDiv = document.getElementById('profileDetails'), editDiv = document.getElementById('profileEdit');
+          const toggleEdit = (edit) => { detailsDiv.style.display = edit ? 'none' : 'block'; editDiv.style.display = edit ? 'block' : 'none'; };
+          editBtn?.addEventListener('click', () => toggleEdit(true));
+          cancelBtn?.addEventListener('click', () => { toggleEdit(false); if(currentUser) loadProfileData(currentUser); });
+          saveBtn?.addEventListener('click', async () => {
+              if(!currentUser) return;
+              await updateDoc(doc(db, "users", currentUser.uid), { firstName: document.getElementById('editFirstName').value, phone: document.getElementById('editPhone').value, address: document.getElementById('editAddress').value, city: document.getElementById('editCity').value, zip: document.getElementById('editZip').value });
+              alert('Profile updated!'); toggleEdit(false); loadProfileData(currentUser);
+          });
+          document.getElementById('logout-btn')?.addEventListener('click', logoutUser);
+          if(currentUser) loadProfileData(currentUser);
+          attachGlobalLinkListeners();
+      }
+
+      async function renderAdmin(container) {
+          if (!currentUser || currentUser.email !== 'admin@gif.org') { navigateTo('login'); return; }
+          container.innerHTML = `<div class="donate-page-content"><div class="container" style="max-width:1300px;"><p class="section-tagline">DASHBOARD</p><h1>Administrator Access</h1><p style="color:var(--color-secondary-accent);">⚠️ Client-side admin panel</p><div class="admin-panel"><h2>User Management</h2><div style="overflow-x:auto;"><table class="admin-table" style="width:100%;"><thead><tr><th>#</th><th>Name</th><th>Email</th><th>Total Donated</th><th>Actions</th></tr></thead><tbody id="userTableBody"><tr><td colspan="5">Loading...</td></tr></tbody></table></div></div><button id="admin-logout-btn" class="btn btn-secondary">LOG OUT</button></div></div>`;
+          
+          async function renderUserTable() {
+              const tbody = document.getElementById('userTableBody');
+              if(!tbody) return;
+              tbody.innerHTML = '';
+              const snapshot = await getDocs(collection(db, "users"));
+              let i=1;
+              snapshot.forEach(docSnap => {
+                  const data = docSnap.data();
+                  const row = tbody.insertRow();
+                  row.insertCell().innerText = i++;
+                  row.insertCell().innerText = data.firstName || 'N/A';
+                  row.insertCell().innerText = data.email;
+                  const donatedCell = row.insertCell();
+                  donatedCell.innerHTML = `$${(data.totalDonated || 0).toFixed(2)} <button class="btn btn-sm btn-edit-donated" data-uid="${docSnap.id}" data-current="${data.totalDonated || 0}">Edit</button>`;
+                  const actionCell = row.insertCell();
+                  actionCell.innerHTML = `<button class="btn btn-sm btn-reset-password" data-email="${data.email}">Reset Password</button> <button class="btn btn-sm btn-danger btn-delete-user" data-uid="${docSnap.id}" data-name="${data.firstName}">Delete Doc</button>`;
+              });
+              document.querySelectorAll('.btn-edit-donated').forEach(btn => btn.addEventListener('click', async (e) => { const uid = btn.dataset.uid; const newAmt = prompt('New total donation amount:', btn.dataset.current); if(newAmt && !isNaN(parseFloat(newAmt))) { await updateDoc(doc(db, "users", uid), { totalDonated: parseFloat(newAmt) }); renderUserTable(); } }));
+              document.querySelectorAll('.btn-reset-password').forEach(btn => btn.addEventListener('click', async (e) => { const email = btn.dataset.email; try { await sendPasswordResetEmail(auth, email); alert(`Reset email sent to ${email}`); } catch(err) { alert('Error sending reset email'); } }));
+              document.querySelectorAll('.btn-delete-user').forEach(btn => btn.addEventListener('click', async (e) => { if(confirm(`Delete ${btn.dataset.name} document?`)) { await deleteDoc(doc(db, "users", btn.dataset.uid)); renderUserTable(); } }));
+          }
+          renderUserTable();
+          document.getElementById('admin-logout-btn')?.addEventListener('click', logoutUser);
+          attachGlobalLinkListeners();
+      }
+
+      function renderDonate(container) {
+          container.innerHTML = `<div class="donate-page-content"><div class="container donation-form-container"><h2>Make a Donation & Change a Life</h2><form id="donationForm"><div id="step1" class="form-step active"><h3>1. Select Amount & Frequency</h3><div class="frequency-selection-group"><div class="frequency-buttons"><div class="frequency-btn active" data-frequency="One-Time">One-Time</div><div class="frequency-btn" data-frequency="Monthly">Monthly</div></div></div><div class="amount-selection-group"><div class="amount-buttons"><div class="amount-btn" data-amount="10">$10</div><div class="amount-btn active" data-amount="50">$50</div><div class="amount-btn" data-amount="100">$100</div></div><div class="input-group"><input type="number" id="customAmount" class="custom-amount-input" placeholder="Enter Custom Amount ($)" min="1" value="50"></div></div><h3>2. Choose Where Your Money Goes</h3><div class="campaign-selection"><div class="campaign-options"><input type="radio" id="campaign1" name="campaign" class="campaign-radio" value="Clean Water" checked><label for="campaign1">Clean Water</label><input type="radio" id="campaign2" name="campaign" value="Education Access"><label for="campaign2">Education Access</label><input type="radio" id="campaign3" name="campaign" value="Disaster Relief"><label for="campaign3">Disaster Relief</label><input type="radio" id="campaign4" name="campaign" value="General Fund"><label for="campaign4">General Fund</label></div></div><h3>3. Optional Comment</h3><div class="checkbox-group"><input type="checkbox" id="addCommentCheck"><label for="addCommentCheck">Write us a comment?</label></div><div class="input-group comment-box" style="display:none;"><textarea id="donorComment" placeholder="Enter your message here..."></textarea></div><div class="form-navigation"><div style="visibility:hidden;"></div><button type="button" class="btn btn-cta btn-form-nav" onclick="nextStep()">Next: Your Details</button></div></div><div id="step2" class="form-step"><h3>4. Your Contact Details</h3><div class="form-row"><div class="input-group"><label for="firstName">First Name *</label><input type="text" id="firstName" required></div><div class="input-group"><label for="lastName">Last Name *</label><input type="text" id="lastName" required></div></div><div class="input-group"><label for="email">Email *</label><input type="email" id="email" required></div><div class="checkbox-group"><input type="checkbox" id="anonymousCheck"><label for="anonymousCheck">Make my donation anonymous</label></div><h3>5. Billing Information</h3><div class="input-group"><label for="country">Country *</label><input type="text" id="country" required value="United States"></div><div class="input-group"><label for="address1">Address Line 1 *</label><input type="text" id="address1" required></div><div class="input-group"><label for="address2">Address Line 2 (Optional)</label><input type="text" id="address2"></div><div class="form-row"><div class="input-group"><label for="city">City *</label><input type="text" id="city" required></div><div class="input-group"><label for="postalCode">Postal/ZIP Code *</label><input type="text" id="postalCode" required></div></div><div class="checkbox-group"><input type="checkbox" id="privacyAgree" required><label for="privacyAgree">By donating you agree to our Privacy Policy *</label></div><div class="form-navigation"><button type="button" class="btn btn-secondary btn-form-nav" onclick="prevStep()">Back</button><button type="submit" class="btn btn-primary btn-form-nav" id="donateSubmitBtn"><span id="donateBtnText">Donate $<span id="finalAmountDisplay">50</span> USD</span><i id="donateBtnSpinner" class="fas fa-spinner fa-spin" style="display:none;"></i></button></div></div></form><div id="stepPayment" class="donation-step" style="display:none;"><h2>Payment Details</h2><p>Please send the exact amount to one of our wallet addresses.</p><div id="paymentDetailsSummary"><h3>Amount to Send: <span id="paymentAmountDisplay"></span></h3><p>Campaign: <span id="paymentCampaignDisplay"></span></p></div><div class="crypto-options"><div class="crypto-wallet"><p><strong>Bitcoin (BTC)</strong></p><div><code>bc1qdu7aqv8wmyqpssk3adx6w4z7nn60py0mfsy9jf</code><button class="copy-btn" data-address="bc1qdu7aqv8wmyqpssk3adx6w4z7nn60py0mfsy9jf">Copy</button></div></div><div class="crypto-wallet"><p><strong>Tether (USDT) - TRC20</strong></p><div><code>TWzvQW29oPmL8MR6QSMe1U8dwWt4k66aSm</code><button class="copy-btn" data-address="TWzvQW29oPmL8MR6QSMe1U8dwWt4k66aSm">Copy</button></div></div><div class="crypto-wallet"><p><strong>Ethereum (ETH)</strong></p><div><code>0xF49FdA767733CE6BD35E85ea47efD9423680Be6a</code><button class="copy-btn" data-address="0xF49FdA767733CE6BD35E85ea47efD9423680Be6a">Copy</button></div></div><div class="crypto-wallet"><p><strong>Ripple (XRP)</strong></p><div><code>ruR4jGezXFT45LScCXZNppHV4Z9Ksio3y</code><button class="copy-btn" data-address="ruR4jGezXFT45LScCXZNppHV4Z9Ksio3y">Copy</button></div></div></div><button id="iHavePaidBtn" class="btn btn-cta">I Have Sent the Payment</button></div></div></div>`;
+          
+          // Donation logic
+          const donationForm = document.getElementById('donationForm');
+          const amountBtns = document.querySelectorAll('.amount-btn');
+          const customInput = document.getElementById('customAmount');
+          const finalSpan = document.getElementById('finalAmountDisplay');
+          amountBtns.forEach(btn => btn.addEventListener('click', () => { amountBtns.forEach(b=>b.classList.remove('active')); btn.classList.add('active'); customInput.value = btn.dataset.amount; finalSpan.innerText = customInput.value; }));
+          customInput.addEventListener('input', () => { amountBtns.forEach(b=>b.classList.remove('active')); finalSpan.innerText = customInput.value || 0; });
+          document.getElementById('addCommentCheck')?.addEventListener('change', (e) => { document.querySelector('.comment-box').style.display = e.target.checked ? 'block' : 'none'; });
+          
+          donationForm?.addEventListener('submit', async (e) => {
+              e.preventDefault();
+              const amount = parseFloat(customInput.value);
+              const frequency = document.querySelector('.frequency-btn.active').dataset.frequency;
+              const campaign = document.querySelector('input[name="campaign"]:checked').value;
+              const firstName = document.getElementById('firstName').value;
+              const email = document.getElementById('email').value;
+              pendingDonationData = { amount, frequency, campaign, firstName, email };
+              document.getElementById('paymentAmountDisplay').innerText = `$${amount.toFixed(2)} USD`;
+              document.getElementById('paymentCampaignDisplay').innerText = campaign;
+              document.getElementById('step1').style.display = 'none';
+              document.getElementById('step2').style.display = 'none';
+              document.getElementById('stepPayment').style.display = 'block';
+              window.scrollTo(0,0);
+          });
+          document.getElementById('iHavePaidBtn')?.addEventListener('click', async () => {
+              if(!pendingDonationData) return;
+              const user = auth.currentUser;
+              await addDoc(collection(db, "donations"), { userId: user ? user.uid : 'anonymous', firstName: pendingDonationData.firstName, email: pendingDonationData.email, amount: pendingDonationData.amount, frequency: pendingDonationData.frequency, campaign: pendingDonationData.campaign, date: serverTimestamp() });
+              if(user) await updateDoc(doc(db, "users", user.uid), { totalDonated: increment(pendingDonationData.amount) });
+              document.querySelector('.donation-form-container').innerHTML = `<h2>🎉 Thank You!</h2><p>Your donation is recorded.</p><a href="#" data-page="index" class="btn btn-cta">Home</a>`;
+              attachGlobalLinkListeners();
+          });
+          document.querySelectorAll('.copy-btn').forEach(btn => btn.addEventListener('click', function() { navigator.clipboard.writeText(this.dataset.address); alert('Copied!'); }));
+          attachGlobalLinkListeners();
+      }
+
+      function attachGlobalLinkListeners() {
+          document.querySelectorAll('[data-page]').forEach(link => {
+              link.addEventListener('click', (e) => { e.preventDefault(); const page = link.dataset.page; const section = link.dataset.section; navigateTo(page, section); });
+          });
+      }
+
+      // Authentication & Routing Initialization
+      window.addEventListener('hashchange', renderPage);
+      onAuthStateChanged(auth, (user) => {
+          currentUser = user;
+          const profileLink = document.getElementById('profile-link-nav');
+          const authLink = document.getElementById('auth-link');
+          if (user) {
+              if (profileLink) profileLink.style.display = 'list-item';
+              if (authLink) { authLink.innerText = 'Log Out'; authLink.onclick = (e) => { e.preventDefault(); logoutUser(); }; authLink.removeAttribute('data-page'); }
+              if (user.email === 'admin@gif.org' && window.location.hash.substring(1) === 'login') navigateTo('admin');
+              else if (window.location.hash.substring(1) === 'login') navigateTo('profile');
+          } else {
+              if (profileLink) profileLink.style.display = 'none';
+              if (authLink) { authLink.innerText = 'Login'; authLink.onclick = null; authLink.setAttribute('data-page', 'login'); attachGlobalLinkListeners(); }
+              const hash = window.location.hash.substring(1);
+              if (hash === 'profile' || hash === 'admin') navigateTo('login');
+          }
+          renderPage();
+      });
+      renderPage();
+    </script>
+</body>
+</html>
